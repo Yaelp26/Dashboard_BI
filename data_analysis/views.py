@@ -247,7 +247,7 @@ class DashboardView(TemplateView):
 @api_view(['DELETE'])
 def eliminar_datasets_view(request):
     with connection.cursor() as cursor:
-        # Buscar y eliminar tablas dataset_#
+        # Eliminar tablas tipo dataset_#
         cursor.execute("""
             SELECT tablename FROM pg_tables
             WHERE tablename LIKE 'dataset_%'
@@ -256,7 +256,10 @@ def eliminar_datasets_view(request):
         for (tabla,) in tablas:
             cursor.execute(f'DROP TABLE IF EXISTS "{tabla}" CASCADE')
 
-    # Eliminar registros del modelo Dataset
-    Dataset.objects.all().delete()
+        # Eliminar registros del modelo Dataset
+        Dataset.objects.all().delete()
 
-    return Response({"message": "Todos los datasets y sus tablas han sido eliminados."})
+        # Reiniciar secuencia del ID
+        cursor.execute("ALTER SEQUENCE data_analysis_dataset_id_seq RESTART WITH 1")
+
+    return Response({"message": "Todos los datasets eliminados y secuencia reiniciada."})
