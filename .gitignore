@@ -1,0 +1,36 @@
+# Archivos compilados de Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Archivos de configuración y logs
+*.log
+*.pot
+*.pyc
+
+# Archivos de base de datos
+*.sqlite3
+*.db
+
+# Archivos de entorno
+.env
+.env.*
+
+# Archivos de migraciones compilados
+*/migrations/__pycache__/
+
+# Archivos de medios (si no quieres subir los datasets)
+#media/
+
+# Archivos estáticos recolectados
+/staticfiles/
+/static/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Archivos de configuración de IDEs
+.vscode/
+.idea/
+*.swp
