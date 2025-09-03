@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import UploadDatasetView, DatasetListView, DatasetDetailView
 from .views import dataset_shape_view, dataset_dtypes_view, dataset_nulls_view, dataset_duplicates_view, dataset_unique_values_view, dataset_describe_view
-from .views import dataset_histograms_view, dataset_boxplots_view, DashboardView
+from .views import dataset_histograms_view, dataset_boxplots_view, DashboardView, eliminar_datasets_view
 
 urlpatterns = [
     path('upload/', UploadDatasetView.as_view(), name='upload-dataset'),
@@ -15,5 +15,6 @@ urlpatterns = [
     path('analyze/<int:id>/describe/', dataset_describe_view, name='dataset-describe'),
     path('analyze/<int:id>/histograms/', dataset_histograms_view, name='dataset-histograms'),
     path('analyze/<int:id>/boxplots/', dataset_boxplots_view, name='dataset-boxplots'),
-     path('dashboard/', DashboardView.as_view(), name='dashboard'),
+    path('delete-datasets/', eliminar_datasets_view, name='eliminar_datasets'),
+    path('dashboard/', DashboardView.as_view(), name='dashboard'),
 ]

@@ -5,6 +5,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.generics import ListAPIView
 from rest_framework.generics import RetrieveAPIView
 from rest_framework import status
+from django.db import connection
 from .models import Dataset
 from .serializers import DatasetSerializer
 from django.views.generic import TemplateView
@@ -22,7 +23,37 @@ class UploadDatasetView(APIView):
         serializer = DatasetSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "Archivo subido correctamente."}, status=status.HTTP_201_CREATED)
+
+            # Leer el archivo CSV directamente desde la request
+            uploaded_file = request.FILES['file']
+            df = pd.read_csv(io.StringIO(uploaded_file.read().decode('utf-8')))
+
+            # Crear una tabla única basada en el ID del dataset
+            dataset_id = serializer.instance.id
+            table_name = f"dataset_{dataset_id}"
+
+            with connection.cursor() as cursor:
+                # Eliminar tabla si ya existe
+                cursor.execute(f'DROP TABLE IF EXISTS "{table_name}"')
+
+                # Crear tabla con columnas como TEXT
+                create_sql = f'CREATE TABLE "{table_name}" ('
+                for col in df.columns:
+                    create_sql += f'"{col}" TEXT, '
+                create_sql = create_sql.rstrip(', ') + ')'
+                cursor.execute(create_sql)
+
+                # Insertar filas
+                for _, row in df.iterrows():
+                    values = "', '".join(str(val).replace("'", "''") for val in row)
+                    insert_sql = f"INSERT INTO \"{table_name}\" VALUES ('{values}')"
+                    cursor.execute(insert_sql)
+
+            return Response({
+                "message": "Dataset subido y almacenado correctamente.",
+                "dataset_id": dataset_id
+            }, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class DatasetListView(ListAPIView):
@@ -212,3 +243,20 @@ def dataset_boxplots_view(request, id):
 
 class DashboardView(TemplateView):
     template_name = 'dashboard.html'
+
+@api_view(['DELETE'])
+def eliminar_datasets_view(request):
+    with connection.cursor() as cursor:
+        # Buscar y eliminar tablas dataset_#
+        cursor.execute("""
+            SELECT tablename FROM pg_tables
+            WHERE tablename LIKE 'dataset_%'
+        """)
+        tablas = cursor.fetchall()
+        for (tabla,) in tablas:
+            cursor.execute(f'DROP TABLE IF EXISTS "{tabla}" CASCADE')
+
+    # Eliminar registros del modelo Dataset
+    Dataset.objects.all().delete()
+
+    return Response({"message": "Todos los datasets y sus tablas han sido eliminados."})
